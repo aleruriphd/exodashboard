@@ -16,11 +16,11 @@ import datetime
 
 st.set_page_config(
     page_title="Exoplanet Population Dashboard",
-    page_icon="💫",   
+    page_icon="🔮",   
     layout="wide",
     initial_sidebar_state="expanded")
 
-tab1, tab2 = st.tabs(["Exoplanet Population stats", "Exoplanet Data"])
+tab1, tab2, tab3 = st.tabs(["Exoplanet Population stats", "Exoplanet Data", "Mass vs Semi-major axis scatter plots"])
 
 
 metric_style = """
@@ -100,12 +100,14 @@ alt.themes.enable("dark")
 
 if tab1:
     with tab1:
-        with st.sidebar:
-            st.title('🔮 Exoplanet Population Dashboard')
+        col = st.columns((2.5, 2.5, 2.5), gap='medium')
+        #with st.sidebar:
+        with col[0]:
+            #st.title('🔮 Exoplanet Population Dashboard')
             
             # Add 'All' option to the method list
             method_list = ['All'] + list(table_confirmed_planets_df.discoverymethod.unique())[::-1]
-            selected_method = st.selectbox('Select a method', method_list, index=0) # Default to 'All'
+            selected_method = st.selectbox('Select an exoplanet detection method', method_list, index=0) # Default to 'All'
 
             if selected_method == 'All':
                 df_selected_method = table_confirmed_planets_df
@@ -144,6 +146,8 @@ if tab1:
         # Note: axis=1 specifies that the function should be applied to each row instead of each column
         table_confirmed_planets_df['category'] = df_selected_method.apply(lambda row: categorize_by_size_and_mass(row['pl_rade'], row['pl_bmasse']), axis=1)
 
+
+
         # Count the number of instances in each category
         category_counts = table_confirmed_planets_df['category'].value_counts()
 
@@ -160,9 +164,9 @@ if tab1:
         counts = category_counts.values
         total_counts = sum(counts)
 
-        col = st.columns((2.0, 3.0), gap='medium')
+        #col = st.columns((2.0, 3.0), gap='medium')
 
-        with col[0]:
+        with col[1]:
             st.title(selected_method)
             st.header('', divider='rainbow')
 
@@ -186,7 +190,7 @@ if tab1:
             
 
 
-        with col[1]:
+        with col[2]:
 
             st.markdown('')
 
@@ -202,14 +206,17 @@ if tab1:
 
 # Convert all values in the 'pl_name' column to lowercase
 table_confirmed_planets_df['pl_name'] = table_confirmed_planets_df['pl_name'].str.lower()
+column_list = list(table_confirmed_planets_df.columns)
+# Export the DataFrame to a CSV file
+table_confirmed_planets_df.to_csv('confirmed_exoplanets_data_categories.csv', index_label='ID')
 
 if tab2:
+
     with tab2: 
 
-
-
         exoplanet_name =  st.text_input("Enter the name of the exoplanet", key="exoname",).lower()
-        #exoplanet_name =  'OGLE-TR-10 b'
+        #exoplanet_name =  'HAT-P-21 b'
+        #exoplanet_name = exoplanet_name.lower()
 
 
 
@@ -221,7 +228,8 @@ if tab2:
                 st.write('Detection method:', pl_disc_method)
                 st.header('', divider='blue')
 
-                pl_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'category'].values[0]        
+                pl_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'category'].values[0]    
+                print(pl_type)    
                 
                 planet_radius = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'pl_rade'].values[0]
 
@@ -277,6 +285,16 @@ if tab2:
 
                 with third_row_col[0]:
                     st.text_area("Eff. Temp of parent star:", host_effect_temp, height=5, disabled=True)
+
+                # Use st.selectbox to let the user select a parameter
+                selected_column = st.selectbox('Select a parameter', column_list, index=11)  # Default to the first column in the list
+                custom = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, selected_column].values[0] 
+
+                fourth_row_col = st.columns((1.0, 1.0, 1.0, 1.0), gap='medium')
+                with fourth_row_col[0]:
+                    st.text_area(selected_column, custom, height=5, disabled=True)
+
+
             else:
                 # The name is not present in the DataFrame
                 st.title(exoplanet_name)
@@ -288,7 +306,35 @@ if tab2:
             st.write("")
 
    
+if tab3:
 
+    with tab3:
+
+        categories_tab3 = category_counts.index.to_list()
+
+        if 'unclassified' in categories_tab3:
+            categories_tab3.remove('unclassified')  # Remove 'unclassified' if it exists
+
+        selected_type = st.selectbox('Select a parameter', categories_tab3, index=0)  # Default to the first column in the list
+
+
+        # Create a boolean mask where True corresponds to rows with selected type category
+        mask = table_confirmed_planets_df['category'] == selected_type
+
+        # Use the mask to filter the DataFrame, keeping only rows where the category is the selected type
+        type_of_planets_df = table_confirmed_planets_df[mask]
+
+        # Create a scatter plot
+        st.write('Scatter plot:', selected_type)
+        st.header('', divider='blue')
+        plt.figure(figsize=(10, 6))  # Optional: Define the size of the figure
+        plt.scatter(type_of_planets_df['pl_orbsmax'], type_of_planets_df['pl_bmasse'])
+        plt.title(selected_type)
+        plt.xlabel('Maximum Orbital Distance (AU)')
+        plt.ylabel('Mass (Earth Masses)')
+
+        # Display the plot in Streamlit
+        st.pyplot(plt)
 
 
 
