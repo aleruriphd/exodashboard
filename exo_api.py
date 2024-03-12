@@ -97,6 +97,9 @@ table_confirmed_planets_df.to_csv('confirmed_exoplanets_data.csv', index_label='
 
 
 alt.themes.enable("dark")
+url = "https://exoplanetarchive.ipac.caltech.edu/index.html"
+st.write("Source: NASA Exoplanet Archive (%s)" % url)
+#st.markdown("Source: NASA Exoplanet Archive (%s)" % url)
 
 if tab1:
     with tab1:
@@ -120,7 +123,7 @@ if tab1:
             display_image(selected_method)
 
             st.text('In Earth masses and Earth radii')
-            st.header('', divider='blue')
+            #st.header('', divider='blue')
             st.text('Gas Giants:   Radius > 4.5 or Mass >= 159')
         
             st.text('Ice Giants:   2.1 < Radius <= 4.5 or 10  <= Mass <159')
@@ -168,14 +171,14 @@ if tab1:
 
         with col[1]:
             st.title(selected_method)
-            st.header('', divider='rainbow')
+            #st.header('', divider='rainbow')
 
             for i in range(len(categories)):
                 st.metric(label=categories[i], value=counts[i], label_visibility="visible")
                 #st.markdown(metric_style.format(categories[i]), unsafe_allow_html=True)
 
             #st.markdown(metric_style.format(total_counts), unsafe_allow_html=True)
-            st.header('', divider='blue')    
+            #st.header('', divider='blue')    
             st.metric(label='Total', value = total_counts, label_visibility="visible")
 
 
@@ -211,6 +214,9 @@ column_list = list(table_confirmed_planets_df.columns)
 table_confirmed_planets_df.to_csv('confirmed_exoplanets_data_categories.csv', index_label='ID')
 
 if tab2:
+    #Initializing the name of the exoplanet so it is not empty
+    exoplanet_name = 'Kepler-167 e'
+    exoplanet_name = exoplanet_name.lower()
 
     with tab2: 
 
@@ -226,7 +232,7 @@ if tab2:
                 pl_disc_method = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'discoverymethod'].values[0]  
                 st.title(exoplanet_name)
                 st.write('Detection method:', pl_disc_method)
-                st.header('', divider='blue')
+                #st.header('', divider='blue')
 
                 pl_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'category'].values[0]    
                 print(pl_type)    
@@ -292,7 +298,7 @@ if tab2:
 
                 fourth_row_col = st.columns((1.0, 1.0, 1.0, 1.0), gap='medium')
                 with fourth_row_col[0]:
-                    st.text_area(selected_column, custom, height=5, disabled=True)
+                    st.text_area(selected_column, custom, height=10, disabled=True)
 
 
             else:
@@ -326,7 +332,7 @@ if tab3:
 
         # Create a scatter plot
         st.write('Scatter plot:', selected_type)
-        st.header('', divider='blue')
+        #st.header('', divider='blue')
         plt.figure(figsize=(10, 6))  # Optional: Define the size of the figure
         plt.scatter(type_of_planets_df['pl_orbsmax'], type_of_planets_df['pl_bmasse'])
         plt.title(selected_type)
