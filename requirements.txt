@@ -4,4 +4,4 @@ datetime
 requests
 altair
 datetime
-streamlit==1.1.*
+streamlit==1.32.*
