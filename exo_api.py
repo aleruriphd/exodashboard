@@ -1,16 +1,9 @@
-import numpy as np
 import pandas as pd
-#import seaborn as sns
 import matplotlib.pyplot as plt
 from datetime import datetime
-from ipywidgets import interact
-import csv
 import requests
 import streamlit as st
-#from streamlit_jupyter import StreamlitPatcher, tqdm
-#StreamlitPatcher().jupyter()  # register streamlit with jupyter-compatible wrappers
 import altair as alt
-import plotly.express as px
 import os
 import datetime
 
