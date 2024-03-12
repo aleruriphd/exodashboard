@@ -1,0 +1,8 @@
+pandas
+matplotlib
+datetime
+requests
+altair
+os
+datetime
+streamlit==1.1.*
