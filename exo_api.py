@@ -29,9 +29,10 @@ metric_style = """
     <h1 style="margin:0;">{}</h1>
 </div>
 """
-
+@st.cache_data
 def download_table():
-    print("Attempting to download the latest version of the NASA's exoplanet archive")
+    placeholder1 = st.empty()
+    placeholder1.text("Attempting to download the latest version of the NASA's exoplanet archive")
     url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+*+from+ps&format=csv"
 
     # Make a GET request to fetch the content
@@ -42,10 +43,13 @@ def download_table():
         # If successful, write the content to a CSV file
         with open("full_table_nasa_url.csv", "wb") as file:
             file.write(response.content)
-        print("Success! Retrieved full_table_nasa_url.csv")
+        placeholder1.text("Success! Retrieved full_table_nasa_url.csv")
     else:
-        print(f"Failed to retrieve data. HTTP Status Code: {response.status_code}")
+        placeholder1.text(f"Failed to retrieve data. HTTP Status Code: {response.status_code}")
 
+    placeholder1.empty()
+
+@st.cache_data
 def display_image(value):
 
     name_of_pic = 'images/' + value + '.png'
@@ -76,18 +80,22 @@ else:
     download_table() 
 
 #Converting the table to a dataframe
-full_table_df = pd.read_csv('full_table_nasa_url.csv')
+@st.cache_data    
+def converting_table_to_df(csv_file):
+    full_table_df = pd.read_csv(csv_file)
 
 
-table_confirmed_planets_df = full_table_df[full_table_df['default_flag'] > 0]
+    table = full_table_df[full_table_df['default_flag'] > 0]
 
-table_confirmed_planets_df.reset_index(drop=True, inplace=True)
-table_confirmed_planets_df.index +=1
+    table.reset_index(drop=True, inplace=True)
+    table.index +=1
 
-# Export the DataFrame to a CSV file
-table_confirmed_planets_df.to_csv('confirmed_exoplanets_data.csv', index_label='ID')
+    # Export the DataFrame to a CSV file
+    table.to_csv('confirmed_exoplanets_data.csv', index_label='ID')
 
+    return(table)
 
+table_confirmed_planets_df = converting_table_to_df(file_path)
 
 alt.themes.enable("dark")
 
@@ -102,8 +110,6 @@ st.write("[Google Scholar Profile](https://scholar.google.com.au/citations?user=
 
 st.header('', divider='blue')
 
-
-#st.markdown("Source: NASA Exoplanet Archive (%s)" % url)
 
 if tab1:
     with tab1:
@@ -136,7 +142,7 @@ if tab1:
 
             st.text('Terrestrial:  0.1 < Radius <= 1.0 or 0.1 < Mass < 1')
 
-            
+        @st.cache_data    
         def categorize_by_size_and_mass(radius, mass):
             if radius > 4.5 or mass >= 159:
                 return 'gas_giants'
@@ -228,6 +234,51 @@ if tab2:
         #exoplanet_name =  'HAT-P-21 b'
         #exoplanet_name = exoplanet_name.lower()
 
+        @st.cache_data
+        def return_planet_parameter(name_of_planet,table, parameter):
+
+            if parameter=="defaultflag":
+                default_flag = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'default_flag'].values[0] 
+                parameter_value = default_flag
+
+            if parameter=='planet_type':
+                pl_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'category'].values[0]  
+                parameter_value = pl_type  
+            
+        
+            elif parameter=='planet_size':
+                planet_radius = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'pl_rade'].values[0]
+                parameter_value = planet_radius
+
+            elif parameter=='planet_mass_in_earths':
+                pl_mass_earth = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'pl_bmasse'].values[0]
+                parameter_value = pl_mass_earth
+
+            elif parameter=='planet_mass_in_jupiters':
+                pl_mass_jupiter = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'pl_bmassj'].values[0]
+                parameter_value = pl_mass_jupiter
+
+            elif parameter=='planet_semimajor':
+                pl_semi_major_au = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'pl_orbsmax'].values[0]
+                parameter_value = pl_semi_major_au
+
+            elif parameter=='planet_eq_temp':
+                pl_eq_temp = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'pl_eqt'].values[0]   
+                parameter_value = pl_eq_temp     
+
+            elif parameter=='star_name':
+                host_name = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'hostname'].values[0] 
+                parameter_value = host_name
+
+            elif parameter=='star_spec_type':
+                host_spect_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'st_spectype'].values[0] 
+                parameter_value = host_spect_type
+
+            elif parameter=='star_eff_temp':
+                host_effect_temp = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == name_of_planet, 'st_teff'].values[0] 
+                parameter_value = host_effect_temp
+
+            return(parameter_value)
 
 
         if exoplanet_name:
@@ -238,63 +289,42 @@ if tab2:
                 st.write('Detection method:', pl_disc_method)
                 st.header('', divider='blue')
 
-                pl_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'category'].values[0]    
-                print(pl_type)    
-                
-                planet_radius = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'pl_rade'].values[0]
-
-                pl_mass_earth = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'pl_bmasse'].values[0]
-
-                pl_mass_jupiter = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'pl_bmassj'].values[0]
-
-                pl_semi_major_au = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'pl_orbsmax'].values[0]
-
-                pl_eq_temp = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'pl_eqt'].values[0]        
-
-                host_name = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'hostname'].values[0] 
-
-                host_spect_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'st_spectype'].values[0] 
-
-                host_spect_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'st_spectype'].values[0] 
-
-                host_effect_temp = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'st_teff'].values[0] 
 
 
+                table = table_confirmed_planets_df
                 first_row_col= st.columns((1.0, 1.0, 1.0, 1.0), gap='medium')
 
                 with first_row_col[0]:
-                    st.text_area("Type:", pl_type, height=5, disabled=True)
+                    st.text_area("Type:", return_planet_parameter(exoplanet_name,table,'planet_type'), height=5, disabled=True)
         
                 with first_row_col[1]:
-                    st.text_area("Radius in Earth radii:", planet_radius , height=5, disabled=True)
+                    st.text_area("Radius in Earth radii:", return_planet_parameter(exoplanet_name,table,'planet_size'), height=5, disabled=True)
 
                 with first_row_col[2]:
-                    st.text_area("Mass in Earth Masses:", pl_mass_earth, height=5, disabled=True)
+                    st.text_area("Mass in Earth Masses:", return_planet_parameter(exoplanet_name,table,'planet_mass_in_earths'), height=5, disabled=True)
 
                 with first_row_col[3]:
-                    st.text_area("Mass in Jupiter Masses:", pl_mass_jupiter, height=5, disabled=True)
-
-
+                    st.text_area("Mass in Jupiter Masses:", return_planet_parameter(exoplanet_name,table,'planet_mass_in_jupiters'), height=5, disabled=True)
 
                 second_row_col = st.columns((1.0, 1.0, 1.0, 1.0), gap='medium')
 
                 with second_row_col[0]:
-                    st.text_area("Dist. from its parent star (AU):", pl_semi_major_au, height=5, disabled=True)
+                    st.text_area("Dist. from its parent star (AU):", return_planet_parameter(exoplanet_name,table,'planet_semimajor'), height=5, disabled=True)
 
                 with second_row_col[1]:
-                    st.text_area("Equilibrium temperature (Kelvin):", pl_eq_temp, height=5, disabled=True)    
+                    st.text_area("Equilibrium temperature (Kelvin):", return_planet_parameter(exoplanet_name,table,'planet_eq_temp'), height=5, disabled=True)    
 
                 with second_row_col[2]:
-                    st.text_area("Parent star name:", host_name, height=5, disabled=True)
+                    st.text_area("Parent star name:", return_planet_parameter(exoplanet_name,table,'star_name'), height=5, disabled=True)
 
                 with second_row_col[3]:
-                    st.text_area("Parent star type:", host_spect_type, height=5, disabled=True)
+                    st.text_area("Parent star type:", return_planet_parameter(exoplanet_name,table,'star_spec_type'), height=5, disabled=True)
 
 
                 third_row_col = st.columns((1.0, 1.0, 1.0, 1.0), gap='medium')
 
                 with third_row_col[0]:
-                    st.text_area("Eff. Temp of parent star:", host_effect_temp, height=5, disabled=True)
+                    st.text_area("Eff. Temp of parent star:", return_planet_parameter(exoplanet_name,table,'star_eff_temp'), height=5, disabled=True)
 
                 # Use st.selectbox to let the user select a parameter
                 selected_column = st.selectbox('Select a parameter', column_list, index=11)  # Default to the first column in the list
