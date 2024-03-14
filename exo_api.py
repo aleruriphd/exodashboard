@@ -90,7 +90,7 @@ else:
 #Converting the table to a dataframe
 @st.cache_data    
 def converting_table_to_df(csv_file):
-    st.write("Converting downloaded table to a dataframe")
+    #st.write("Converting downloaded table to a dataframe")
     full_table_df = pd.read_csv(csv_file)
 
 
@@ -170,8 +170,6 @@ if tab1:
         # Count the number of instances in each category
         category_counts = df_selected_method['category'].value_counts()
 
-        # Display the counts
-        #print(category_counts)
 
         # Pie chart, where the slices will be ordered and plotted counter-clockwise:
         categories = category_counts.index.to_list()
@@ -185,32 +183,49 @@ if tab1:
 
         #col = st.columns((2.0, 3.0), gap='medium')
 
-        with col[1]:
+        with col[1]:  #Will show the counts for each category
             st.title(selected_method)
             st.header('', divider='rainbow')
 
-            for i in range(len(categories)):
-                st.metric(label=categories[i], value=counts[i], label_visibility="visible")
-                #st.markdown(metric_style.format(categories[i]), unsafe_allow_html=True)
+            cols_in_col_1 = st.columns((2.0, 3.0), gap='medium')
 
-            #st.markdown(metric_style.format(total_counts), unsafe_allow_html=True)
-            #st.header('', divider='blue')    
-            st.metric(label='Total', value = total_counts, label_visibility="visible")
+            def download_csv_category(method, csv_detection_method):
+                    # Export the DataFrame to a CSV file
+                    csv_detection_method.to_csv(method + '_confirmed_exoplanets.csv', index_label='ID')
 
 
-        if 'unclassified' in categories:
-            index_to_remove = categories.index('unclassified')
-
-            # Remove the category and its corresponding count
-            del categories[index_to_remove]
-            counts = [count for i, count in enumerate(counts) if i != index_to_remove] 
 
 
-        with col[2]:
+            with cols_in_col_1[0]:
+                for i in range(len(categories)):
+                    st.metric(label=categories[i], value=counts[i], label_visibility="visible")
+   
+            
+                st.metric(label='Total', value = total_counts, label_visibility="visible")
 
-            st.markdown('')
+            with cols_in_col_1[1]:
+                st.button("Download the csv file for this detection method", on_click = download_csv_category(selected_method, df_selected_method))
 
+
+
+
+
+        with col[2]:  #The pie chart for the categories will be presented
+
+            #We remove the 'unclassified' category so it is not shown in the pie chart
+
+            if 'unclassified' in categories:
+                index_to_remove = categories.index('unclassified')
+
+                # Remove the category and its corresponding count
+                del categories[index_to_remove]
+                counts = [count for i, count in enumerate(counts) if i != index_to_remove] 
+
+                st.markdown('')
+
+            st.write("*Unclassified exoplanets are not included in the pie chart")
             fig1, ax1 = plt.subplots()
+            plt.title("Exoplanets detected using the " + selected_method + " method")
             ax1.pie(counts, labels=categories, autopct='%1.1f%%',shadow=True, startangle=90, radius = 2)
             ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
