@@ -33,10 +33,11 @@ metric_style = """
 """
 @st.cache_data
 def download_table():
-    initial_message = "Attempting to download the latest version of the NASA's exoplanet archive. This may take a while (~120MB)"
-    st.write(initial_message)
+
     placeholder1 = st.empty()
-    placeholder1.text("Attempting to download the latest version of the NASA's exoplanet archive")
+    initial_message = "The latest version of the NASA's exoplanet archive is being downloaded as a table with today's date does not exist in this server."
+    st.write(initial_message)
+    placeholder1.text("The latest version of the NASA's exoplanet archive is being downloaded as a table with today's date does not exist in this server.")
     url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+*+from+ps&format=csv"
 
     # Make a GET request to fetch the content
@@ -67,6 +68,7 @@ def display_image(value):
 # File path
 file_path = 'full_table_nasa_url.csv'
 
+
 # Check if the file exists
 if os.path.exists(file_path):
     # Get the last modification time of the file
@@ -87,6 +89,14 @@ if os.path.exists(file_path):
     
 else:
     download_table() 
+    mod_time = os.path.getmtime(file_path)
+    # Convert the modification time to a datetime object
+    mod_date = datetime.datetime.fromtimestamp(mod_time)
+
+
+def use_latest_table():
+    file_path = 'latest_full_table_nasa_url.csv'
+    
 
 #Converting the table to a dataframe
 @st.cache_data    
@@ -106,6 +116,9 @@ def converting_table_to_df(csv_file):
 
     return(table)
 
+#st.button("Download the latest table from the NASA's website", on_click = download_table())
+#st.button("use the latest table in this server with date: " + str(mod_date.date()), on_click = use_latest_table())
+
 table_confirmed_planets_df = converting_table_to_df(file_path)
 
 alt.themes.enable("dark")
@@ -116,9 +129,6 @@ st.write("By Alejandro Ruiz Rivera, PhD.")
 st.write("[Medium Profile](https://medium.com/@ruizrivera.alejandro)")
 st.write("[Linkedin Profile](https://www.linkedin.com/in/alejandro-ruiz-ph-d/)")
 st.write("[Google Scholar Profile](https://scholar.google.com.au/citations?user=zi4G4pUAAAAJ&hl=en)")
-
-
-
 st.header('', divider='blue')
 
 
@@ -140,6 +150,7 @@ if tab1:
                 return np.select(conditions, choices, default='unclassified')
             
             # Add 'All' option to the method list
+            st.write("Using the NASA's exoplanet archive table with date: " + str(mod_date.date())+ ".")
             method_list = ['All'] + list(table_confirmed_planets_df.discoverymethod.unique())[::-1]
             selected_method = st.selectbox('Select an exoplanet detection method', method_list, index=0) # Default to 'All'
 
