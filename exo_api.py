@@ -7,6 +7,7 @@ import altair as alt
 import os
 import datetime
 import numpy as np
+from io import BytesIO
 
 st.set_page_config(
     page_title="Exoplanet Population Dashboard",
@@ -229,15 +230,24 @@ if tab1:
 
             st.write("*Unclassified exoplanets are not included in the pie chart")
             fig1, ax1 = plt.subplots()
-            plt.title("Exoplanets detected using the " + selected_method + " method")
+
+            if selected_method =="All":
+                plt.title("Categories of all detected exoplanets")
+
+            else:
+                plt.title("Categories of exoplanets detected using the " + selected_method + " method")
             ax1.pie(counts, labels=categories, autopct='%1.1f%%',shadow=True, startangle=90, radius = 2)
             ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
             st.pyplot(fig1)
 
-            #exoplanet_name =  'GJ 667 C b'
-            #pl_type = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, 'category'].values[0]  
-            #print(pl_type)
+            # Save the plot to a BytesIO object
+            buf = BytesIO()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+
+            #user can download the generated pie chart
+            st.download_button(label="Download this pie chart", data = buf, file_name= selected_method + "_pie_chart.png", mime="image/png",)
 
 # Convert all values in the 'pl_name' column to lowercase
 table_confirmed_planets_df['pl_name'] = table_confirmed_planets_df['pl_name'].str.lower()
@@ -397,6 +407,13 @@ if tab3:
 
         # Display the plot in Streamlit
         st.pyplot(plt)
+
+        buf = BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+
+        #user can download the generated scatter chart
+        st.download_button(label="Download this scatter chart", data = buf, file_name= selected_type + "_scatter_chart.png", mime="image/png",)        
 
 
 
