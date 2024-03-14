@@ -189,10 +189,11 @@ if tab1:
 
             cols_in_col_1 = st.columns((2.0, 3.0), gap='medium')
 
-            def download_csv_category(method, csv_detection_method):
+            def download_csv_detection(csv_detection_method):
                     # Export the DataFrame to a CSV file
-                    csv_detection_method.to_csv(method + '_confirmed_exoplanets.csv', index_label='ID')
+                    return csv_detection_method.to_csv(index_label='ID').encode('utf-8')
 
+            csv_to_download = download_csv_detection (df_selected_method)
 
 
 
@@ -204,7 +205,10 @@ if tab1:
                 st.metric(label='Total', value = total_counts, label_visibility="visible")
 
             with cols_in_col_1[1]:
-                st.button("Download the csv file for this detection method", on_click = download_csv_category(selected_method, df_selected_method))
+
+                st.download_button(label="Download the csv file for this detection method", data = csv_to_download, file_name= selected_method + "_confirmed_exoplanets.csv", mime="text/csv",)
+
+                #st.button("Download the csv file for this detection method", on_click = download_csv_detection(selected_method, df_selected_method))
 
 
 
