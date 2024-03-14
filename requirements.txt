@@ -1,8 +1,6 @@
-pandas
-matplotlib
-numpy
-datetime
-requests
-altair
-datetime
-streamlit==1.32.*
+altair==5.2.0
+matplotlib==3.8.3
+numpy==1.26.4
+pandas==2.2.1
+Requests==2.31.0
+streamlit==1.31.1
