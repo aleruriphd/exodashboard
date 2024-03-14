@@ -6,6 +6,7 @@ import streamlit as st
 import altair as alt
 import os
 import datetime
+import numpy as np
 
 st.set_page_config(
     page_title="Exoplanet Population Dashboard",
@@ -31,6 +32,8 @@ metric_style = """
 """
 @st.cache_data
 def download_table():
+    initial_message = "Attempting to download the latest version of the NASA's exoplanet archive. This may take a while (~120MB)"
+    st.write(initial_message)
     placeholder1 = st.empty()
     placeholder1.text("Attempting to download the latest version of the NASA's exoplanet archive")
     url = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+*+from+ps&format=csv"
@@ -44,8 +47,13 @@ def download_table():
         with open("full_table_nasa_url.csv", "wb") as file:
             file.write(response.content)
         placeholder1.text("Success! Retrieved full_table_nasa_url.csv")
+        initial_message = "Success! Retrieved full_table_nasa_url.csv"
+        st.write(initial_message)
+        st.write("")
     else:
         placeholder1.text(f"Failed to retrieve data. HTTP Status Code: {response.status_code}")
+        initial_message = f"Failed to retrieve data. HTTP Status Code: {response.status_code}"
+        st.write(initial_message)
 
     placeholder1.empty()
 
@@ -82,6 +90,7 @@ else:
 #Converting the table to a dataframe
 @st.cache_data    
 def converting_table_to_df(csv_file):
+    st.write("Converting downloaded table to a dataframe")
     full_table_df = pd.read_csv(csv_file)
 
 
@@ -92,6 +101,7 @@ def converting_table_to_df(csv_file):
 
     # Export the DataFrame to a CSV file
     table.to_csv('confirmed_exoplanets_data.csv', index_label='ID')
+    st.write("")
 
     return(table)
 
@@ -116,18 +126,32 @@ if tab1:
         col = st.columns((2.5, 2.5, 2.5), gap='medium')
         #with st.sidebar:
         with col[0]:
-            #st.title('🔮 Exoplanet Population Dashboard')
+
+            @st.cache_data    
+            def categorize_by_size_and_mass_vectorized(radius, mass):
+                conditions = [
+                    (radius > 4.5) | (mass >= 159),
+                    (radius > 2.1) & (radius <= 4.5) | ((mass >= 10) & (mass < 159)),
+                    (radius > 1.0) & (radius <= 2.1) | ((mass >= 1) & (mass < 10)),
+                    (radius > 0.1) & (radius <= 1.0) | ((mass > 0.1) & (mass < 1)),
+                ]
+                choices = ['gas_giants', 'ice_giants', 'super_earths', 'terrestrial']
+                return np.select(conditions, choices, default='unclassified')
             
             # Add 'All' option to the method list
             method_list = ['All'] + list(table_confirmed_planets_df.discoverymethod.unique())[::-1]
             selected_method = st.selectbox('Select an exoplanet detection method', method_list, index=0) # Default to 'All'
 
+            # Apply the function to each row of the DataFrame
+            table_confirmed_planets_df['category'] = categorize_by_size_and_mass_vectorized(table_confirmed_planets_df['pl_rade'], table_confirmed_planets_df['pl_bmasse'])
+            category_counts_all = table_confirmed_planets_df['category'].value_counts()
+
             if selected_method == 'All':
                 df_selected_method = table_confirmed_planets_df
+                
             else:
                 df_selected_method = table_confirmed_planets_df[table_confirmed_planets_df.discoverymethod == selected_method]
-
-            
+                #print(df_selected_method)
 
             
             display_image(selected_method)
@@ -142,30 +166,12 @@ if tab1:
 
             st.text('Terrestrial:  0.1 < Radius <= 1.0 or 0.1 < Mass < 1')
 
-        @st.cache_data    
-        def categorize_by_size_and_mass(radius, mass):
-            if radius > 4.5 or mass >= 159:
-                return 'gas_giants'
-            elif 2.1 < radius <= 4.5 or 10 <= mass <159:
-                return 'ice_giants'
-            elif 1.0 < radius <= 2.1 or 1 <= mass <10:
-                return 'super_earths'
-            elif 0.1 < radius <= 1.0 or 0.1 < mass < 1:
-                return 'terrestrial'
-            else:
-                return 'unclassified'  # For values that don't fit in any bucket
-            
-        # Apply the function to each row of the DataFrame
-        # Note: axis=1 specifies that the function should be applied to each row instead of each column
-        table_confirmed_planets_df['category'] = df_selected_method.apply(lambda row: categorize_by_size_and_mass(row['pl_rade'], row['pl_bmasse']), axis=1)
-
-
 
         # Count the number of instances in each category
-        category_counts = table_confirmed_planets_df['category'].value_counts()
+        category_counts = df_selected_method['category'].value_counts()
 
         # Display the counts
-        print(category_counts)
+        #print(category_counts)
 
         # Pie chart, where the slices will be ordered and plotted counter-clockwise:
         categories = category_counts.index.to_list()
@@ -200,9 +206,6 @@ if tab1:
             counts = [count for i, count in enumerate(counts) if i != index_to_remove] 
 
 
-            
-
-
         with col[2]:
 
             st.markdown('')
@@ -234,7 +237,7 @@ if tab2:
         #exoplanet_name =  'HAT-P-21 b'
         #exoplanet_name = exoplanet_name.lower()
 
-        @st.cache_data
+        #@st.cache_data
         def return_planet_parameter(name_of_planet,table, parameter):
 
             if parameter=="defaultflag":
@@ -327,7 +330,7 @@ if tab2:
                     st.text_area("Eff. Temp of parent star:", return_planet_parameter(exoplanet_name,table,'star_eff_temp'), height=5, disabled=True)
 
                 # Use st.selectbox to let the user select a parameter
-                selected_column = st.selectbox('Select a parameter', column_list, index=11)  # Default to the first column in the list
+                selected_column = st.selectbox('Custom user parameter', column_list, index=11)  # Default to the first column in the list
                 custom = table_confirmed_planets_df.loc[table_confirmed_planets_df['pl_name'] == exoplanet_name, selected_column].values[0] 
 
                 fourth_row_col = st.columns((1.0, 1.0, 1.0, 1.0), gap='medium')
@@ -350,7 +353,7 @@ if tab3:
 
     with tab3:
 
-        categories_tab3 = category_counts.index.to_list()
+        categories_tab3 = category_counts_all.index.to_list()
 
         if 'unclassified' in categories_tab3:
             categories_tab3.remove('unclassified')  # Remove 'unclassified' if it exists
