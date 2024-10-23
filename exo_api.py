@@ -133,7 +133,7 @@ st.write("[A Story of More Than 5000 Worlds](https://books2read.com/more-than-50
 st.write("[Una historia de mas de 5000 mundos](https://books2read.com/mas-de-5000-mundos)")
 #Display the book covers images
 book_covers = 'images/caratulas libros.png'
-st.image(book_covers, width=300)
+st.image(book_covers, width=450)
 st.header('', divider='blue')
 
 
