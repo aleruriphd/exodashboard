@@ -132,7 +132,7 @@ st.write("[Google Scholar Profile](https://scholar.google.com.au/citations?user=
 st.write("[A Story of More Than 5000 Worlds](https://books2read.com/more-than-5000-worlds)")
 st.write("[Una historia de mas de 5000 mundos](https://books2read.com/mas-de-5000-mundos)")
 #Display the book covers images
-book_covers = 'caratulas libros.png'
+book_covers = 'images/caratulas libros.png'
 st.image(book_covers)
 st.header('', divider='blue')
 
