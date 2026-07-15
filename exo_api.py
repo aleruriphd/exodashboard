@@ -199,13 +199,73 @@ planets_df = load_dataframe(data_file, str(snapshot_date))
 # Sidebar — branding, links and data provenance
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.title("🪐 Exoplanet Population Dashboard")
-    st.caption(
-        f"Data: [NASA Exoplanet Archive]"
-        f"(https://exoplanetarchive.ipac.caltech.edu/index.html) · "
-        f"snapshot of **{snapshot_date}**"
+    SIDEBAR_HEADER_CSS = """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
+    .sb-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 1.55rem;
+        font-weight: 700;
+        line-height: 1.25;
+        margin-bottom: 8px;
+    }
+    .sb-title .sb-grad {
+        background: linear-gradient(90deg, #5aa9e6, #b8a2e3);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    .sb-caption {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 0.8rem;
+        opacity: 0.75;
+        margin-bottom: 14px;
+    }
+    .sb-caption a { color: #7fc4ff; text-decoration: none; }
+    .sb-caption a:hover { color: #b8a2e3; text-decoration: underline; }
+    .sb-stat {
+        font-family: 'Space Grotesk', sans-serif;
+        background: rgba(128, 128, 128, 0.09);
+        border: 1px solid rgba(128, 128, 128, 0.25);
+        border-left: 4px solid #5aa9e6;
+        border-radius: 14px;
+        padding: 12px 16px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    }
+    .sb-stat-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #b8a2e3;
+    }
+    .sb-stat-value {
+        font-size: 2.1rem;
+        font-weight: 700;
+        line-height: 1.15;
+        background: linear-gradient(90deg, #5aa9e6, #b8a2e3);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    </style>
+    """
+
+    st.markdown(
+        SIDEBAR_HEADER_CSS
+        + f"""
+    <div class="sb-title">🪐 <span class="sb-grad">Exoplanet Population Dashboard</span></div>
+    <div class="sb-caption">
+        Data: <a href="https://exoplanetarchive.ipac.caltech.edu/index.html"
+        target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{snapshot_date}</b>
+    </div>
+    <div class="sb-stat">
+        <div class="sb-stat-label">Confirmed exoplanets</div>
+        <div class="sb-stat-value">{len(planets_df):,}</div>
+    </div>
+    """,
+        unsafe_allow_html=True,
     )
-    st.metric("Confirmed exoplanets", f"{len(planets_df):,}")
 
     st.divider()
 
