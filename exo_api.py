@@ -94,16 +94,47 @@ CARD_CSS = """
     color: var(--accent);
     line-height: 1.15;
 }
+.cat-value.txt { font-size: 1.3rem; padding-top: 0.35rem; }
+.pl-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    background: linear-gradient(90deg, #5aa9e6, #b8a2e3);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 6px 0 6px 0;
+}
+.pl-meta {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.86rem;
+    opacity: 0.85;
+    margin-bottom: 10px;
+}
+.pl-chip {
+    display: inline-block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 2px 10px;
+    margin-left: 6px;
+}
 </style>
 """
 
 
-def category_card(icon: str, label: str, value: str, accent: str) -> str:
+def category_card(icon: str, label: str, value: str, accent: str, small: bool = False) -> str:
+    value_cls = "cat-value txt" if small else "cat-value"
     return (
         f'<div class="cat-card" style="--accent:{accent}">'
         f'<div class="cat-icon">{icon}</div>'
         f'<div class="cat-label">{label}</div>'
-        f'<div class="cat-value">{value}</div>'
+        f'<div class="{value_cls}">{value}</div>'
         f"</div>"
     )
 
@@ -490,25 +521,41 @@ with tab2:
 
     row = planets_df[planets_df["pl_name"] == selected_planet].iloc[0]
 
-    st.title(selected_planet)
-    st.caption(
-        f"Detection method: **{row['discoverymethod']}** · "
-        f"Discovered in **{fmt(row.get('disc_year'), 0)}** · "
-        f"Category: **{CATEGORY_LABELS.get(row['category'], row['category'])}**"
+    cat_label = CATEGORY_LABELS.get(row["category"], row["category"])
+    cat_color = CATEGORY_COLORS.get(cat_label, "#8a8a8a")
+    cat_icon = CATEGORY_ICONS.get(cat_label, "❔")
+
+    st.markdown(
+        CARD_CSS
+        + f"""
+    <div class="pl-title">{selected_planet}</div>
+    <div class="pl-meta">
+        Detected by <b>{row['discoverymethod']}</b> ·
+        Discovered in <b>{fmt(row.get('disc_year'), 0)}</b>
+        <span class="pl-chip" style="--accent:{cat_color}">{cat_icon} {cat_label}</span>
+    </div>
+    """,
+        unsafe_allow_html=True,
     )
-    st.divider()
 
-    r1 = st.columns(4)
-    r1[0].metric("Radius (Earth radii)", fmt(row["pl_rade"]))
-    r1[1].metric("Mass (Earth masses)", fmt(row["pl_bmasse"]))
-    r1[2].metric("Mass (Jupiter masses)", fmt(row["pl_bmassj"], 3))
-    r1[3].metric("Semi-major axis (AU)", fmt(row["pl_orbsmax"], 3))
-
-    r2 = st.columns(4)
-    r2[0].metric("Equilibrium temp. (K)", fmt(row["pl_eqt"], 0))
-    r2[1].metric("Host star", fmt(row["hostname"]))
-    r2[2].metric("Star spectral type", fmt(row["st_spectype"]))
-    r2[3].metric("Star effective temp. (K)", fmt(row["st_teff"], 0))
+    STAR_COLOR = "#e8c468"
+    planet_cards = [
+        category_card("📏", "Radius (Earth radii)", fmt(row["pl_rade"]), cat_color),
+        category_card("⚖️", "Mass (Earth masses)", fmt(row["pl_bmasse"]), cat_color),
+        category_card("🪐", "Mass (Jupiter masses)", fmt(row["pl_bmassj"], 3), cat_color),
+        category_card("🛰️", "Semi-major axis (AU)", fmt(row["pl_orbsmax"], 3), cat_color),
+    ]
+    star_cards = [
+        category_card("🌡️", "Equilibrium temp. (K)", fmt(row["pl_eqt"], 0), cat_color),
+        category_card("⭐", "Host star", fmt(row["hostname"]), STAR_COLOR, small=True),
+        category_card("🌈", "Star spectral type", fmt(row["st_spectype"]), STAR_COLOR, small=True),
+        category_card("☀️", "Star effective temp. (K)", fmt(row["st_teff"], 0), STAR_COLOR),
+    ]
+    st.markdown(
+        '<div class="cat-row">' + "".join(planet_cards) + "</div>"
+        '<div class="cat-row">' + "".join(star_cards) + "</div>",
+        unsafe_allow_html=True,
+    )
 
     st.divider()
     with st.expander("Look up any other parameter for this planet"):
@@ -519,7 +566,12 @@ with tab2:
         selected_column = st.selectbox(
             "Archive column", column_list, index=default_col
         )
-        st.metric(selected_column, fmt(row[selected_column]))
+        st.markdown(
+            '<div class="cat-row">'
+            + category_card("🔭", selected_column, fmt(row[selected_column]), "#b8a2e3", small=True)
+            + "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 # ---------------------------------------------------------------------------
