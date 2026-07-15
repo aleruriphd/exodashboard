@@ -171,8 +171,8 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab1, tab2, tab3 = st.tabs(
-    ["📊 Population statistics", "🔎 Planet explorer", "🌌 Mass vs orbit"]
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["📊 Population statistics", "🔎 Planet explorer", "🌌 Mass vs orbit", "🛰️ Detection methods"]
 )
 
 
@@ -433,3 +433,81 @@ with tab3:
             file_name=f"{selected_label.replace(' ', '_').lower()}_scatter.png",
             mime="image/png",
         )
+
+
+# ---------------------------------------------------------------------------
+# Tab 4 — Detection methods
+# ---------------------------------------------------------------------------
+with tab4:
+    st.subheader("How confirmed exoplanets were discovered")
+
+    method_counts = (
+        planets_df["discoverymethod"]
+        .value_counts()
+        .rename_axis("Method")
+        .reset_index(name="Planets")
+    )
+    method_counts["Percentage"] = (
+        method_counts["Planets"] / method_counts["Planets"].sum() * 100
+    )
+    # Only label slices large enough to have room; small ones use tooltip/table
+    method_counts["pct_label"] = np.where(
+        method_counts["Percentage"] >= 2.0,
+        method_counts["Percentage"].map(lambda p: f"{p:.1f}%"),
+        "",
+    )
+
+    col_chart, col_table = st.columns((3, 2), gap="large")
+
+    with col_chart:
+        method_color = alt.Color(
+            "Method:N",
+            scale=alt.Scale(scheme="tableau20"),
+            sort=alt.EncodingSortField("Planets", order="descending"),
+            legend=alt.Legend(orient="right", title=None),
+        )
+        method_tooltip = [
+            "Method:N",
+            alt.Tooltip("Planets:Q", format=","),
+            alt.Tooltip("Percentage:Q", format=".2f", title="Percentage (%)"),
+        ]
+
+        method_base = alt.Chart(method_counts).encode(
+            theta=alt.Theta("Planets:Q", stack=True),
+            order=alt.Order("Planets:Q", sort="descending"),
+            color=method_color,
+            tooltip=method_tooltip,
+        )
+        method_arcs = method_base.mark_arc(innerRadius=65, outerRadius=130)
+        method_labels = method_base.mark_text(
+            radius=152, size=15, fontWeight="bold"
+        ).encode(text="pct_label:N")
+
+        method_donut = (
+            (method_arcs + method_labels)
+            .properties(
+                title="Share of confirmed exoplanets by detection method",
+                height=400,
+                padding={"top": 10, "bottom": 25, "left": 10, "right": 10},
+            )
+        )
+        st.altair_chart(method_donut, width="stretch")
+        st.caption(
+            "Slices under 2% are unlabelled to avoid clutter — "
+            "hover them or use the table for exact figures."
+        )
+
+    with col_table:
+        table_view = method_counts[["Method", "Planets", "Percentage"]].copy()
+        table_view["Percentage"] = table_view["Percentage"].map(lambda p: f"{p:.2f}%")
+        table_view["Planets"] = table_view["Planets"].map(lambda n: f"{n:,}")
+        st.dataframe(table_view, hide_index=True, width="stretch", height=430)
+
+    st.download_button(
+        label="⬇️ Download this breakdown as CSV",
+        data=method_counts[["Method", "Planets", "Percentage"]]
+        .to_csv(index=False)
+        .encode("utf-8"),
+        file_name="exoplanets_by_detection_method.csv",
+        mime="text/csv",
+    )
