@@ -256,6 +256,7 @@ def fetch_nasa_artwork(planet_name: str):
 
 
 data_file, snapshot_date = ensure_data()
+formatted_date = snapshot_date.strftime("%d %B %Y")
 planets_df = load_dataframe(data_file, str(snapshot_date))
 
 
@@ -318,7 +319,7 @@ with st.sidebar:
     sb_header_html = (
         '<div class="sb-title">🪐 <span class="sb-grad">Exoplanet Population Dashboard</span></div>'
         '<div class="sb-caption">Data: <a href="https://exoplanetarchive.ipac.caltech.edu/index.html" '
-        f'target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{snapshot_date}</b></div>'
+        f'target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{formatted_date}</b></div>'
         '<div class="sb-stat"><div class="sb-stat-label">Confirmed exoplanets</div>'
         f'<div class="sb-stat-value">{len(planets_df):,}</div></div>'
     )
