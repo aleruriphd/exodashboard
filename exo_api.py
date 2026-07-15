@@ -241,23 +241,38 @@ with tab1:
         if chart_data.empty:
             st.info("No categorised planets for this detection method yet.")
         else:
-            donut = (
-                alt.Chart(chart_data)
-                .mark_arc(innerRadius=70)
-                .encode(
-                    theta=alt.Theta("Planets:Q"),
-                    color=alt.Color(
-                        "Category:N",
-                        scale=alt.Scale(
-                            domain=list(chart_data["Category"]),
-                            range=[CATEGORY_COLORS[c] for c in chart_data["Category"]],
-                        ),
-                        legend=alt.Legend(orient="bottom"),
-                    ),
-                    tooltip=["Category:N", alt.Tooltip("Planets:Q", format=",")],
-                )
-                .properties(title=chart_title, height=380)
+            chart_data["Percentage"] = (
+                chart_data["Planets"] / chart_data["Planets"].sum() * 100
             )
+            chart_data["pct_label"] = chart_data["Percentage"].map(
+                lambda p: f"{p:.1f}%"
+            )
+
+            color_scale = alt.Color(
+                "Category:N",
+                scale=alt.Scale(
+                    domain=list(chart_data["Category"]),
+                    range=[CATEGORY_COLORS[c] for c in chart_data["Category"]],
+                ),
+                legend=alt.Legend(orient="bottom"),
+            )
+            tooltip = [
+                "Category:N",
+                alt.Tooltip("Planets:Q", format=","),
+                alt.Tooltip("Percentage:Q", format=".1f", title="Percentage (%)"),
+            ]
+
+            base = alt.Chart(chart_data).encode(
+                theta=alt.Theta("Planets:Q", stack=True),
+                color=color_scale,
+                tooltip=tooltip,
+            )
+            arcs = base.mark_arc(innerRadius=70, outerRadius=140)
+            labels = base.mark_text(
+                radius=165, size=15, fontWeight="bold"
+            ).encode(text="pct_label:N")
+
+            donut = (arcs + labels).properties(title=chart_title, height=380)
             st.altair_chart(donut, width="stretch")
             st.caption("*Unclassified exoplanets are not included in the chart. Hover a slice for exact counts.")
 
