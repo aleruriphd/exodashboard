@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-alt.themes.enable("dark")
+alt.theme.enable("dark")
 
 ARCHIVE_URL = (
     "https://exoplanetarchive.ipac.caltech.edu/TAP/sync"
@@ -165,7 +165,7 @@ with st.sidebar:
         "- [Una historia de más de 5000 mundos](https://books2read.com/mas-de-5000-mundos)"
     )
     if os.path.exists("images/caratulas libros.png"):
-        st.image("images/caratulas libros.png", use_container_width=True)
+        st.image("images/caratulas libros.png", width="stretch")
 
 
 # ---------------------------------------------------------------------------
@@ -214,7 +214,7 @@ with tab1:
     with col_left:
         image_path = f"images/{selected_method}.png"
         if os.path.exists(image_path):
-            st.image(image_path, use_container_width=True)
+            st.image(image_path, width="stretch")
 
         with st.expander("How are planets categorised?"):
             st.markdown(
@@ -258,7 +258,7 @@ with tab1:
                 )
                 .properties(title=chart_title, height=380)
             )
-            st.altair_chart(donut, use_container_width=True)
+            st.altair_chart(donut, width="stretch")
             st.caption("*Unclassified exoplanets are not included in the chart. Hover a slice for exact counts.")
 
     st.download_button(
@@ -379,7 +379,7 @@ with tab3:
         .interactive()
         .properties(height=520, title=f"Mass vs semi-major axis — {selected_label}")
     )
-    st.altair_chart(scatter, use_container_width=True)
+    st.altair_chart(scatter, width="stretch")
 
     dl_cols = st.columns((1, 1, 3))
     with dl_cols[0]:
