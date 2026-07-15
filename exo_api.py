@@ -5,6 +5,7 @@ By Alejandro Ruiz Rivera, PhD.
 
 import datetime
 import os
+import textwrap
 from io import BytesIO
 
 import altair as alt
@@ -282,21 +283,14 @@ with st.sidebar:
     </style>
     """
 
-    st.markdown(
-        SIDEBAR_HEADER_CSS
-        + f"""
-    <div class="sb-title">🪐 <span class="sb-grad">Exoplanet Population Dashboard</span></div>
-    <div class="sb-caption">
-        Data: <a href="https://exoplanetarchive.ipac.caltech.edu/index.html"
-        target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{snapshot_date}</b>
-    </div>
-    <div class="sb-stat">
-        <div class="sb-stat-label">Confirmed exoplanets</div>
-        <div class="sb-stat-value">{len(planets_df):,}</div>
-    </div>
-    """,
-        unsafe_allow_html=True,
+    sb_header_html = (
+        '<div class="sb-title">🪐 <span class="sb-grad">Exoplanet Population Dashboard</span></div>'
+        '<div class="sb-caption">Data: <a href="https://exoplanetarchive.ipac.caltech.edu/index.html" '
+        f'target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{snapshot_date}</b></div>'
+        '<div class="sb-stat"><div class="sb-stat-label">Confirmed exoplanets</div>'
+        f'<div class="sb-stat-value">{len(planets_df):,}</div></div>'
     )
+    st.markdown(textwrap.dedent(SIDEBAR_HEADER_CSS) + sb_header_html, unsafe_allow_html=True)
 
     st.divider()
 
@@ -337,34 +331,28 @@ with st.sidebar:
     </style>
     """
 
-    st.markdown(
-        SIDEBAR_CSS
-        + """
-    <div class="author-box">
-      <div class="author-eyebrow">About the author</div>
-      <div class="author-name">Alejandro Ruiz Rivera, PhD</div>
-      <div class="author-tagline">Telecommunications engineer · science communicator</div>
-      <ul class="author-links">
-        <li><span class="li-icon">📝</span><a href="https://medium.com/@ruizrivera.alejandro" target="_blank">Medium</a></li>
-        <li><span class="li-icon">💼</span><a href="https://www.linkedin.com/in/alejandro-ruiz-ph-d/" target="_blank">LinkedIn</a></li>
-        <li><span class="li-icon">🎓</span><a href="https://scholar.google.com.au/citations?user=zi4G4pUAAAAJ&hl=en" target="_blank">Google Scholar</a></li>
-      </ul>
-
-      <div class="author-eyebrow">YouTube channels</div>
-      <ul class="author-links">
-        <li><span class="li-icon">▶️</span><a href="https://www.youtube.com/@TheWowContact" target="_blank">The WOW Contact</a></li>
-        <li><span class="li-icon">▶️</span><a href="https://www.youtube.com/@Elcontactowow" target="_blank">El Contacto WOW</a></li>
-      </ul>
-
-      <div class="author-eyebrow">Books</div>
-      <ul class="author-links">
-        <li><span class="li-icon">📖</span><a href="https://books2read.com/more-than-5000-worlds" target="_blank">A Story of More Than 5000 Worlds</a></li>
-        <li><span class="li-icon">📖</span><a href="https://books2read.com/mas-de-5000-mundos" target="_blank">Una historia de más de 5000 mundos</a></li>
-      </ul>
-    </div>
-    """,
-        unsafe_allow_html=True,
+    author_html = (
+        '<div class="author-box">'
+        '<div class="author-eyebrow">About the author</div>'
+        '<div class="author-name">Alejandro Ruiz Rivera, PhD</div>'
+        '<div class="author-tagline">Telecommunications engineer · science communicator</div>'
+        '<ul class="author-links">'
+        '<li><span class="li-icon">📝</span><a href="https://medium.com/@ruizrivera.alejandro" target="_blank">Medium</a></li>'
+        '<li><span class="li-icon">💼</span><a href="https://www.linkedin.com/in/alejandro-ruiz-ph-d/" target="_blank">LinkedIn</a></li>'
+        '<li><span class="li-icon">🎓</span><a href="https://scholar.google.com.au/citations?user=zi4G4pUAAAAJ&hl=en" target="_blank">Google Scholar</a></li>'
+        "</ul>"
+        '<div class="author-eyebrow">YouTube channels</div>'
+        '<ul class="author-links">'
+        '<li><span class="li-icon">▶️</span><a href="https://www.youtube.com/@TheWowContact" target="_blank">The WOW Contact</a></li>'
+        '<li><span class="li-icon">▶️</span><a href="https://www.youtube.com/@Elcontactowow" target="_blank">El Contacto WOW</a></li>'
+        "</ul>"
+        '<div class="author-eyebrow">Books</div>'
+        '<ul class="author-links">'
+        '<li><span class="li-icon">📖</span><a href="https://books2read.com/more-than-5000-worlds" target="_blank">A Story of More Than 5000 Worlds</a></li>'
+        '<li><span class="li-icon">📖</span><a href="https://books2read.com/mas-de-5000-mundos" target="_blank">Una historia de más de 5000 mundos</a></li>'
+        "</ul></div>"
     )
+    st.markdown(textwrap.dedent(SIDEBAR_CSS) + author_html, unsafe_allow_html=True)
     if os.path.exists("images/caratulas libros.png"):
         st.image("images/caratulas libros.png", width="stretch")
 
@@ -525,24 +513,35 @@ with tab2:
     cat_color = CATEGORY_COLORS.get(cat_label, "#8a8a8a")
     cat_icon = CATEGORY_ICONS.get(cat_label, "❔")
 
-    st.markdown(
-        CARD_CSS
-        + f"""
-    <div class="pl-title">{selected_planet}</div>
-    <div class="pl-meta">
-        Detected by <b>{row['discoverymethod']}</b> ·
-        Discovered in <b>{fmt(row.get('disc_year'), 0)}</b>
-        <span class="pl-chip" style="--accent:{cat_color}">{cat_icon} {cat_label}</span>
-    </div>
-    """,
-        unsafe_allow_html=True,
+    # NOTE: this HTML must stay on flush-left single lines — leading
+    # indentation makes st.markdown treat it as a literal code block.
+    header_html = (
+        f'<div class="pl-title">{selected_planet}</div>'
+        f'<div class="pl-meta">Detected by <b>{row["discoverymethod"]}</b> · '
+        f'Discovered in <b>{"—" if pd.isna(row.get("disc_year")) else int(row["disc_year"])}</b>'
+        f'<span class="pl-chip" style="--accent:{cat_color}">{cat_icon} {cat_label}</span></div>'
+    )
+    st.markdown(CARD_CSS + header_html, unsafe_allow_html=True)
+
+    JUPITER_SVG = (
+        '<svg width="27" height="27" viewBox="0 0 27 27" style="vertical-align:middle">'
+        '<defs><clipPath id="jclip"><circle cx="13.5" cy="13.5" r="12.5"/></clipPath></defs>'
+        '<circle cx="13.5" cy="13.5" r="12.5" fill="#d9a066"/>'
+        '<g clip-path="url(#jclip)">'
+        '<rect x="0" y="4" width="27" height="3" fill="#c98a4b"/>'
+        '<rect x="0" y="9" width="27" height="2.4" fill="#f0d9b5"/>'
+        '<rect x="0" y="13" width="27" height="3.2" fill="#b5723a"/>'
+        '<rect x="0" y="18" width="27" height="2.4" fill="#f0d9b5"/>'
+        '<rect x="0" y="22" width="27" height="2.6" fill="#c98a4b"/>'
+        '<ellipse cx="18.5" cy="17.5" rx="3.4" ry="2.1" fill="#c0492b"/>'
+        "</g></svg>"
     )
 
     STAR_COLOR = "#e8c468"
     planet_cards = [
         category_card("📏", "Radius (Earth radii)", fmt(row["pl_rade"]), cat_color),
-        category_card("⚖️", "Mass (Earth masses)", fmt(row["pl_bmasse"]), cat_color),
-        category_card("🪐", "Mass (Jupiter masses)", fmt(row["pl_bmassj"], 3), cat_color),
+        category_card("🌍", "Mass (Earth masses)", fmt(row["pl_bmasse"]), cat_color),
+        category_card(JUPITER_SVG, "Mass (Jupiter masses)", fmt(row["pl_bmassj"], 3), cat_color),
         category_card("🛰️", "Semi-major axis (AU)", fmt(row["pl_orbsmax"], 3), cat_color),
     ]
     star_cards = [
