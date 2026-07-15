@@ -48,6 +48,64 @@ CATEGORY_COLORS = {
     "Terrestrial": "#c9a227",
     "Unclassified": "#8a8a8a",
 }
+CATEGORY_ICONS = {
+    "Gas giants": "🪐",
+    "Ice giants": "❄️",
+    "Super-Earths": "🌏",
+    "Terrestrial": "🪨",
+    "Unclassified": "❔",
+    "Total": "✨",
+}
+
+CARD_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
+.cat-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin: 6px 0 10px 0;
+}
+.cat-card {
+    flex: 1 1 130px;
+    min-width: 130px;
+    background: rgba(128, 128, 128, 0.09);
+    border: 1px solid rgba(128, 128, 128, 0.25);
+    border-top: 4px solid var(--accent);
+    border-radius: 14px;
+    padding: 14px 10px 12px 10px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.cat-icon { font-size: 1.7rem; line-height: 1.2; }
+.cat-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+.cat-value {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.15;
+}
+</style>
+"""
+
+
+def category_card(icon: str, label: str, value: str, accent: str) -> str:
+    return (
+        f'<div class="cat-card" style="--accent:{accent}">'
+        f'<div class="cat-icon">{icon}</div>'
+        f'<div class="cat-label">{label}</div>'
+        f'<div class="cat-value">{value}</div>'
+        f"</div>"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -171,8 +229,8 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab1, tab2, tab3, tab4 = st.tabs(
-    ["📊 Population statistics", "🔎 Planet explorer", "🌌 Mass vs orbit", "🛰️ Detection methods"]
+tab4, tab1, tab2, tab3 = st.tabs(
+    ["🛰️ Detection methods", "📊 Population statistics", "🔎 Planet explorer", "🌌 Mass vs orbit"]
 )
 
 
@@ -201,11 +259,25 @@ with tab1:
         )
     )
 
-    # --- Metrics row (labels and values always paired correctly) ---
-    metric_cols = st.columns(len(category_counts) + 1)
-    for col, (cat, count) in zip(metric_cols, category_counts.items()):
-        col.metric(CATEGORY_LABELS[cat], f"{count:,}")
-    metric_cols[-1].metric("Total", f"{category_counts.sum():,}")
+    # --- Category cards (labels and values always paired correctly) ---
+    cards = [
+        category_card(
+            CATEGORY_ICONS[CATEGORY_LABELS[cat]],
+            CATEGORY_LABELS[cat],
+            f"{count:,}",
+            CATEGORY_COLORS[CATEGORY_LABELS[cat]],
+        )
+        for cat, count in category_counts.items()
+    ]
+    cards.append(
+        category_card(
+            CATEGORY_ICONS["Total"], "Total", f"{category_counts.sum():,}", "#b8a2e3"
+        )
+    )
+    st.markdown(
+        CARD_CSS + '<div class="cat-row">' + "".join(cards) + "</div>",
+        unsafe_allow_html=True,
+    )
 
     st.divider()
 
