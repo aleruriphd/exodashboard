@@ -223,6 +223,38 @@ def fmt(value, decimals: int = 2) -> str:
     return str(value)
 
 
+@st.cache_data(show_spinner=False, ttl=7 * 24 * 3600, max_entries=500)
+def fetch_nasa_artwork(planet_name: str):
+    """Look up the planet's page on NASA's Exoplanet Catalog and return
+    (image_url, page_url) for its artist's-concept render, or None.
+
+    NASA catalog slugs are lowercase with spaces as hyphens,
+    e.g. 'Beta Pictoris d' -> 'beta-pictoris-d'.
+    """
+    import re as _re
+
+    slug = _re.sub(r"[^a-z0-9]+", "-", planet_name.lower()).strip("-")
+    page_url = f"https://science.nasa.gov/exoplanet-catalog/{slug}/"
+    try:
+        resp = requests.get(
+            page_url,
+            timeout=8,
+            headers={"User-Agent": "Mozilla/5.0 (exodashboard; Streamlit app)"},
+        )
+        if resp.status_code != 200:
+            return None
+        match = _re.search(
+            r'<meta[^>]+property="og:image"[^>]+content="([^"]+)"', resp.text
+        ) or _re.search(
+            r'<meta[^>]+content="([^"]+)"[^>]+property="og:image"', resp.text
+        )
+        if match and "assets.science.nasa.gov" in match.group(1):
+            return match.group(1), page_url
+    except requests.RequestException:
+        pass
+    return None
+
+
 data_file, snapshot_date = ensure_data()
 planets_df = load_dataframe(data_file, str(snapshot_date))
 
@@ -550,11 +582,27 @@ with tab2:
         category_card("🌈", "Star spectral type", fmt(row["st_spectype"]), STAR_COLOR, small=True),
         category_card("☀️", "Star effective temp. (K)", fmt(row["st_teff"], 0), STAR_COLOR),
     ]
-    st.markdown(
-        '<div class="cat-row">' + "".join(planet_cards) + "</div>"
-        '<div class="cat-row">' + "".join(star_cards) + "</div>",
-        unsafe_allow_html=True,
-    )
+    artwork = fetch_nasa_artwork(selected_planet)
+
+    if artwork:
+        img_url, nasa_page = artwork
+        col_cards, col_art = st.columns((3, 2), gap="large")
+        with col_art:
+            st.image(img_url, width="stretch")
+            st.caption(
+                "Artist's concept, representative of this planet type "
+                "(credit: NASA). "
+                f"[Explore the interactive 3D model on NASA's catalog]({nasa_page})."
+            )
+    else:
+        col_cards = st.container()
+
+    with col_cards:
+        st.markdown(
+            '<div class="cat-row">' + "".join(planet_cards) + "</div>"
+            '<div class="cat-row">' + "".join(star_cards) + "</div>",
+            unsafe_allow_html=True,
+        )
 
     st.divider()
     with st.expander("Look up any other parameter for this planet"):
