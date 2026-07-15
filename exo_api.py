@@ -208,26 +208,71 @@ with st.sidebar:
     st.metric("Confirmed exoplanets", f"{len(planets_df):,}")
 
     st.divider()
-    st.subheader("About the author")
-    st.write("**Alejandro Ruiz Rivera, PhD**")
-    st.markdown(
-        "- [Medium](https://medium.com/@ruizrivera.alejandro)\n"
-        "- [LinkedIn](https://www.linkedin.com/in/alejandro-ruiz-ph-d/)\n"
-        "- [Google Scholar](https://scholar.google.com.au/citations?user=zi4G4pUAAAAJ&hl=en)"
-    )
 
-    st.divider()
-    st.subheader("YouTube channels")
-    st.markdown(
-        "- [The WOW Contact](https://www.youtube.com/@TheWowContact)\n"
-        "- [El Contacto WOW](https://www.youtube.com/@Elcontactowow)"
-    )
+    SIDEBAR_CSS = """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
+    .author-box { font-family: 'Space Grotesk', sans-serif; }
+    .author-eyebrow {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #b8a2e3;
+        margin: 14px 0 4px 0;
+    }
+    .author-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.25;
+        background: linear-gradient(90deg, #5aa9e6, #b8a2e3);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 2px;
+    }
+    .author-tagline { font-size: 0.82rem; opacity: 0.7; margin-bottom: 6px; }
+    .author-links { list-style: none; padding: 0; margin: 4px 0 0 0; }
+    .author-links li { margin: 7px 0; }
+    .author-links a {
+        color: #7fc4ff;
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 500;
+        transition: color 0.15s ease;
+    }
+    .author-links a:hover { color: #b8a2e3; text-decoration: underline; }
+    .author-links .li-icon { margin-right: 7px; }
+    </style>
+    """
 
-    st.divider()
-    st.subheader("Books")
     st.markdown(
-        "- [A Story of More Than 5000 Worlds](https://books2read.com/more-than-5000-worlds)\n"
-        "- [Una historia de más de 5000 mundos](https://books2read.com/mas-de-5000-mundos)"
+        SIDEBAR_CSS
+        + """
+    <div class="author-box">
+      <div class="author-eyebrow">About the author</div>
+      <div class="author-name">Alejandro Ruiz Rivera, PhD</div>
+      <div class="author-tagline">Telecommunications engineer · science communicator</div>
+      <ul class="author-links">
+        <li><span class="li-icon">📝</span><a href="https://medium.com/@ruizrivera.alejandro" target="_blank">Medium</a></li>
+        <li><span class="li-icon">💼</span><a href="https://www.linkedin.com/in/alejandro-ruiz-ph-d/" target="_blank">LinkedIn</a></li>
+        <li><span class="li-icon">🎓</span><a href="https://scholar.google.com.au/citations?user=zi4G4pUAAAAJ&hl=en" target="_blank">Google Scholar</a></li>
+      </ul>
+
+      <div class="author-eyebrow">YouTube channels</div>
+      <ul class="author-links">
+        <li><span class="li-icon">▶️</span><a href="https://www.youtube.com/@TheWowContact" target="_blank">The WOW Contact</a></li>
+        <li><span class="li-icon">▶️</span><a href="https://www.youtube.com/@Elcontactowow" target="_blank">El Contacto WOW</a></li>
+      </ul>
+
+      <div class="author-eyebrow">Books</div>
+      <ul class="author-links">
+        <li><span class="li-icon">📖</span><a href="https://books2read.com/more-than-5000-worlds" target="_blank">A Story of More Than 5000 Worlds</a></li>
+        <li><span class="li-icon">📖</span><a href="https://books2read.com/mas-de-5000-mundos" target="_blank">Una historia de más de 5000 mundos</a></li>
+      </ul>
+    </div>
+    """,
+        unsafe_allow_html=True,
     )
     if os.path.exists("images/caratulas libros.png"):
         st.image("images/caratulas libros.png", width="stretch")
