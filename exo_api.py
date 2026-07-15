@@ -254,7 +254,7 @@ with tab1:
                     domain=list(chart_data["Category"]),
                     range=[CATEGORY_COLORS[c] for c in chart_data["Category"]],
                 ),
-                legend=alt.Legend(orient="bottom"),
+                legend=alt.Legend(orient="right", title=None),
             )
             tooltip = [
                 "Category:N",
@@ -267,12 +267,15 @@ with tab1:
                 color=color_scale,
                 tooltip=tooltip,
             )
-            arcs = base.mark_arc(innerRadius=70, outerRadius=140)
+            arcs = base.mark_arc(innerRadius=65, outerRadius=130)
             labels = base.mark_text(
-                radius=165, size=15, fontWeight="bold"
+                radius=152, size=15, fontWeight="bold"
             ).encode(text="pct_label:N")
 
-            donut = (arcs + labels).properties(title=chart_title, height=380)
+            donut = (
+                (arcs + labels)
+                .properties(title=chart_title, height=400, padding={"top": 10, "bottom": 25, "left": 10, "right": 10})
+            )
             st.altair_chart(donut, width="stretch")
             st.caption("*Unclassified exoplanets are not included in the chart. Hover a slice for exact counts.")
 
