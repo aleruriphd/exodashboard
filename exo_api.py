@@ -217,6 +217,13 @@ with st.sidebar:
     )
 
     st.divider()
+    st.subheader("YouTube channels")
+    st.markdown(
+        "- [The WOW Contact](https://www.youtube.com/@TheWowContact)\n"
+        "- [El Contacto WOW](https://www.youtube.com/@Elcontactowow)"
+    )
+
+    st.divider()
     st.subheader("Books")
     st.markdown(
         "- [A Story of More Than 5000 Worlds](https://books2read.com/more-than-5000-worlds)\n"
