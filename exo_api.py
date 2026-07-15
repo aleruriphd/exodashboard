@@ -571,10 +571,11 @@ with tab2:
 
     STAR_COLOR = "#e8c468"
     planet_cards = [
-        category_card("📏", "Radius (Earth radii)", fmt(row["pl_rade"]), cat_color),
+        category_card("📐", "Radius (Earth radii)", fmt(row["pl_rade"]), cat_color),
         category_card("🌍", "Mass (Earth masses)", fmt(row["pl_bmasse"]), cat_color),
         category_card(JUPITER_SVG, "Mass (Jupiter masses)", fmt(row["pl_bmassj"], 3), cat_color),
         category_card("🛰️", "Semi-major axis (AU)", fmt(row["pl_orbsmax"], 3), cat_color),
+        category_card("📏", "Distance (pc)", fmt(row["sy_dist"], 3), cat_color),
     ]
     star_cards = [
         category_card("🌡️", "Equilibrium temp. (K)", fmt(row["pl_eqt"], 0), cat_color),
