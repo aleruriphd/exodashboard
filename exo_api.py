@@ -256,7 +256,6 @@ def fetch_nasa_artwork(planet_name: str):
 
 
 data_file, snapshot_date = ensure_data()
-formatted_date = snapshot_date.strftime("%d %B %Y")
 planets_df = load_dataframe(data_file, str(snapshot_date))
 
 
@@ -319,7 +318,7 @@ with st.sidebar:
     sb_header_html = (
         '<div class="sb-title">🪐 <span class="sb-grad">Exoplanet Population Dashboard</span></div>'
         '<div class="sb-caption">Data: <a href="https://exoplanetarchive.ipac.caltech.edu/index.html" '
-        f'target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{formatted_date}</b></div>'
+        f'target="_blank">NASA Exoplanet Archive</a> · snapshot of <b>{snapshot_date}</b></div>'
         '<div class="sb-stat"><div class="sb-stat-label">Confirmed exoplanets</div>'
         f'<div class="sb-stat-value">{len(planets_df):,}</div></div>'
     )
@@ -393,8 +392,50 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
-tab4, tab1, tab2, tab3 = st.tabs(
-    ["🛰️ Detection methods", "📊 Population statistics", "🔎 Planet explorer", "🌌 Mass vs orbit"]
+HWC_FILES = ("hwc.csv", "hwc_full.csv", "hwc_simplified.csv")
+
+
+@st.cache_data(show_spinner=False)
+def load_hwc(cache_key: str):
+    """Load the PHL Habitable Worlds Catalog CSV bundled in the repo.
+
+    Column names have varied across HWC releases (p_name vs P_NAME etc.),
+    so downstream code resolves columns case-insensitively.
+    """
+    for path in HWC_FILES:
+        if os.path.exists(path):
+            return pd.read_csv(path, low_memory=False)
+    return None
+
+
+def hwc_col(df: pd.DataFrame, *candidates: str):
+    """Return the first column matching any candidate name, case-insensitively."""
+    lookup = {c.lower(): c for c in df.columns}
+    for cand in candidates:
+        if cand.lower() in lookup:
+            return lookup[cand.lower()]
+    return None
+
+
+def hwc_num(row, colname, decimals: int = 2) -> str:
+    """Numeric HWC field -> display string ('—' when missing/non-numeric)."""
+    if colname is None:
+        return "—"
+    val = pd.to_numeric(pd.Series([row[colname]]), errors="coerce").iloc[0]
+    return fmt(float(val), decimals) if pd.notna(val) else "—"
+
+
+PC_TO_LY = 3.26156
+
+
+tab4, tab1, tab2, tab3, tab5 = st.tabs(
+    [
+        "🛰️ Detection methods",
+        "📊 Population statistics",
+        "🔎 Planet explorer",
+        "🌌 Mass vs orbit",
+        "🌿 Habitable exoplanets explorer",
+    ]
 )
 
 
@@ -570,17 +611,20 @@ with tab2:
         "</g></svg>"
     )
 
-    PC_TO_LY = 3.26156
     STAR_COLOR = "#e8c468"
     planet_cards = [
-        category_card("📐", "Radius (Earth radii)", fmt(row["pl_rade"]), cat_color),
+        category_card("📏", "Radius (Earth radii)", fmt(row["pl_rade"]), cat_color),
         category_card("🌍", "Mass (Earth masses)", fmt(row["pl_bmasse"]), cat_color),
         category_card(JUPITER_SVG, "Mass (Jupiter masses)", fmt(row["pl_bmassj"], 3), cat_color),
         category_card("🛰️", "Semi-major axis (AU)", fmt(row["pl_orbsmax"], 3), cat_color),
-        category_card("📏", "Distance from Earth (ly)", fmt(row["sy_dist"] * PC_TO_LY, 1), cat_color),
     ]
+    dist_pc = row.get("sy_dist")
+    dist_ly = (
+        fmt(float(dist_pc) * PC_TO_LY, 0) if pd.notna(dist_pc) else "—"
+    )
     star_cards = [
         category_card("🌡️", "Equilibrium temp. (K)", fmt(row["pl_eqt"], 0), cat_color),
+        category_card("✨", "Distance (light-years)", dist_ly, "#b8a2e3"),
         category_card("⭐", "Host star", fmt(row["hostname"]), STAR_COLOR, small=True),
         category_card("🌈", "Star spectral type", fmt(row["st_spectype"]), STAR_COLOR, small=True),
         category_card("☀️", "Star effective temp. (K)", fmt(row["st_teff"], 0), STAR_COLOR),
@@ -797,3 +841,202 @@ with tab4:
         file_name="exoplanets_by_detection_method.csv",
         mime="text/csv",
     )
+
+
+# ---------------------------------------------------------------------------
+# Tab 5 — Habitable exoplanets explorer (PHL Habitable Worlds Catalog)
+# ---------------------------------------------------------------------------
+with tab5:
+    hwc_key = ""
+    for _p in HWC_FILES:
+        if os.path.exists(_p):
+            hwc_key = f"{_p}:{os.path.getmtime(_p)}"
+            break
+    hwc_df = load_hwc(hwc_key)
+
+    if hwc_df is None:
+        st.markdown(
+            CARD_CSS
+            + '<div class="pl-title">Habitable exoplanets explorer</div>'
+            '<div class="pl-meta">Powered by the <b>Habitable Worlds Catalog</b> '
+            "(PHL @ UPR Arecibo)</div>",
+            unsafe_allow_html=True,
+        )
+        st.info(
+            "**The HWC data file isn't bundled with this app yet.** To enable this tab:\n\n"
+            "1. Download the *Full Catalog — all exoplanets (CSV)* from the "
+            "[PHL Habitable Worlds Catalog data page](https://phl.upr.edu/hwc/data).\n"
+            "2. Rename the file to `hwc.csv`.\n"
+            "3. Commit it to the root of this repository and redeploy.\n\n"
+            "The catalog flags potentially habitable planets with `p_habitable > 0` "
+            "(1 = conservative sample, 2 = optimistic sample)."
+        )
+    else:
+        # --- Resolve columns across HWC naming variants -------------------
+        c_name = hwc_col(hwc_df, "p_name", "name", "pl_name")
+        c_hab = hwc_col(hwc_df, "p_habitable")
+        c_esi = hwc_col(hwc_df, "p_esi", "esi")
+        c_type = hwc_col(hwc_df, "p_type")
+        c_mass = hwc_col(hwc_df, "p_mass")
+        c_radius = hwc_col(hwc_df, "p_radius")
+        c_period = hwc_col(hwc_df, "p_period")
+        c_sma = hwc_col(hwc_df, "p_semi_major_axis", "p_sma")
+        c_tsurf = hwc_col(hwc_df, "p_temp_surf")
+        c_teq = hwc_col(hwc_df, "p_temp_equil")
+        c_sname = hwc_col(hwc_df, "s_name", "hostname")
+        c_stype = hwc_col(hwc_df, "s_type", "s_spec_type")
+        c_dist = hwc_col(hwc_df, "s_distance", "p_distance", "sy_dist")
+        c_detection = hwc_col(hwc_df, "p_detection", "p_detection_method")
+        c_year = hwc_col(hwc_df, "p_year", "p_discovery_year")
+
+        if c_name is None:
+            st.error(
+                "The bundled `hwc.csv` doesn't look like the PHL Habitable Worlds "
+                "Catalog (no planet-name column found). Please re-download it from "
+                "[phl.upr.edu/hwc/data](https://phl.upr.edu/hwc/data)."
+            )
+            st.stop()
+
+        # --- Potentially habitable subset, sorted by ESI ------------------
+        hab_df = hwc_df.copy()
+        if c_hab is not None:
+            hab_flags = pd.to_numeric(hab_df[c_hab], errors="coerce").fillna(0)
+            hab_df = hab_df[hab_flags > 0].copy()
+            hab_df["_sample"] = np.where(
+                pd.to_numeric(hab_df[c_hab], errors="coerce") == 1,
+                "Conservative",
+                "Optimistic",
+            )
+        else:
+            hab_df["_sample"] = "—"
+        if c_esi is not None:
+            hab_df["_esi"] = pd.to_numeric(hab_df[c_esi], errors="coerce")
+            hab_df = hab_df.sort_values("_esi", ascending=False)
+
+        n_cons = int((hab_df["_sample"] == "Conservative").sum())
+        n_opt = int((hab_df["_sample"] == "Optimistic").sum())
+
+        # --- Overview cards ----------------------------------------------
+        st.markdown(
+            CARD_CSS
+            + '<div class="pl-title">Habitable exoplanets explorer</div>'
+            '<div class="pl-meta">Potentially habitable worlds from the '
+            '<b><a href="https://phl.upr.edu/hwc" target="_blank" '
+            'style="color:#7fc4ff">Habitable Worlds Catalog</a></b> '
+            "(PHL @ UPR Arecibo), ranked by Earth Similarity Index</div>"
+            + '<div class="cat-row">'
+            + category_card("🌍", "Potentially habitable", f"{len(hab_df):,}", "#7bc86c")
+            + category_card("🌿", "Conservative sample", f"{n_cons:,}", "#7bc86c")
+            + category_card("🌊", "Optimistic sample", f"{n_opt:,}", "#5aa9e6")
+            + "</div>",
+            unsafe_allow_html=True,
+        )
+        st.divider()
+
+        # --- Planet picker (sorted by ESI, best first) --------------------
+        hab_names = hab_df[c_name].dropna().astype(str).tolist()
+        selected_hab = st.selectbox(
+            "Search for a potentially habitable exoplanet",
+            hab_names,
+            index=0,
+            help="Ordered by Earth Similarity Index — the most Earth-like first.",
+        )
+        hrow = hab_df[hab_df[c_name].astype(str) == selected_hab].iloc[0]
+
+        sample = hrow["_sample"]
+        sample_color = "#7bc86c" if sample == "Conservative" else "#5aa9e6"
+        sample_icon = "🌿" if sample == "Conservative" else "🌊"
+        ptype = str(hrow[c_type]) if c_type is not None and pd.notna(hrow[c_type]) else ""
+
+        meta_bits = []
+        if c_detection is not None and pd.notna(hrow[c_detection]):
+            meta_bits.append(f"Detected by <b>{hrow[c_detection]}</b>")
+        if c_year is not None and pd.notna(hrow[c_year]):
+            try:
+                meta_bits.append(f"Discovered in <b>{int(float(hrow[c_year]))}</b>")
+            except (TypeError, ValueError):
+                pass
+        if ptype:
+            meta_bits.append(f"PHL type: <b>{ptype}</b>")
+
+        header_html = (
+            f'<div class="pl-title">{selected_hab}</div>'
+            f'<div class="pl-meta">{" · ".join(meta_bits)}'
+            f'<span class="pl-chip" style="--accent:{sample_color}">'
+            f"{sample_icon} {sample} sample</span></div>"
+        )
+        st.markdown(header_html, unsafe_allow_html=True)
+
+        # --- Distance in light-years -------------------------------------
+        hab_dist_ly = "—"
+        if c_dist is not None:
+            dval = pd.to_numeric(pd.Series([hrow[c_dist]]), errors="coerce").iloc[0]
+            if pd.notna(dval):
+                hab_dist_ly = fmt(float(dval) * PC_TO_LY, 0)
+
+        HAB_GREEN = "#7bc86c"
+        hab_planet_cards = [
+            category_card("🌐", "Earth Similarity Index", hwc_num(hrow, c_esi), "#b8a2e3"),
+            category_card("📏", "Radius (Earth radii)", hwc_num(hrow, c_radius), HAB_GREEN),
+            category_card("🌍", "Mass (Earth masses)", hwc_num(hrow, c_mass), HAB_GREEN),
+            category_card("🔄", "Orbital period (days)", hwc_num(hrow, c_period, 1), HAB_GREEN),
+        ]
+        hab_star_cards = [
+            category_card("🌡️", "Surface temp. (K)*", hwc_num(hrow, c_tsurf, 0), HAB_GREEN)
+            if c_tsurf is not None
+            else category_card("🌡️", "Equilibrium temp. (K)", hwc_num(hrow, c_teq, 0), HAB_GREEN),
+            category_card("✨", "Distance (light-years)", hab_dist_ly, "#b8a2e3"),
+            category_card("⭐", "Host star", str(hrow[c_sname]) if c_sname is not None and pd.notna(hrow[c_sname]) else "—", STAR_COLOR, small=True),
+            category_card("🌈", "Star type", str(hrow[c_stype]) if c_stype is not None and pd.notna(hrow[c_stype]) else "—", STAR_COLOR, small=True),
+        ]
+
+        hab_artwork = fetch_nasa_artwork(selected_hab)
+        if hab_artwork:
+            himg, hpage = hab_artwork
+            hcol_cards, hcol_art = st.columns((3, 2), gap="large")
+            with hcol_art:
+                st.image(himg, width="stretch")
+                st.caption(
+                    "Artist's concept, representative of this planet type "
+                    f"(credit: NASA). [Interactive 3D model]({hpage})."
+                )
+        else:
+            hcol_cards = st.container()
+
+        with hcol_cards:
+            st.markdown(
+                '<div class="cat-row">' + "".join(hab_planet_cards) + "</div>"
+                '<div class="cat-row">' + "".join(hab_star_cards) + "</div>",
+                unsafe_allow_html=True,
+            )
+
+        if c_tsurf is not None:
+            st.caption(
+                "*Modeled surface temperature assuming an Earth-like atmosphere "
+                "(PHL). Actual temperatures depend on the real atmosphere."
+            )
+
+        with st.expander("What do 'conservative' and 'optimistic' mean?"):
+            st.markdown(
+                "The HWC considers planets orbiting within their star's optimistic "
+                "habitable zone. The **conservative sample** (≤ 1.6 Earth radii or "
+                "≤ 3 Earth masses) contains planets more likely to be rocky and to "
+                "support surface liquid water. The **optimistic sample** includes "
+                "larger planets — possible super-Earths, ocean worlds, or "
+                "mini-Neptunes — that are less likely to be rocky. Habitable-zone "
+                "limits follow Kopparapu et al. (2014); none of this guarantees a "
+                "planet is actually habitable."
+            )
+
+        st.download_button(
+            label="⬇️ Download the potentially habitable list (CSV)",
+            data=hab_df.drop(columns=["_sample", "_esi"], errors="ignore")
+            .to_csv(index=False)
+            .encode("utf-8"),
+            file_name="potentially_habitable_exoplanets_hwc.csv",
+            mime="text/csv",
+        )
+        st.caption(
+            "Data: [Habitable Worlds Catalog](https://phl.upr.edu/hwc), "
+            "PHL @ UPR Arecibo (CC). Please cite PHL when reusing this data."
+        )
