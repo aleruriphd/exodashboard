@@ -392,12 +392,53 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
+HWC_URL = "https://www.hpcf.upr.edu/~abel/phl/hwc/data/hwc.csv"
 HWC_FILES = ("hwc.csv", "hwc_full.csv", "hwc_simplified.csv")
+HWC_MAX_AGE_DAYS = 7
+
+
+def download_hwc() -> bool:
+    """Download a fresh HWC snapshot from PHL. Returns True on success.
+
+    Validates the payload looks like the catalog (header contains P_NAME)
+    before overwriting, so a server error page never clobbers good data.
+    """
+    try:
+        resp = requests.get(HWC_URL, timeout=120)
+        if resp.status_code == 200 and b"P_NAME" in resp.content[:2000].upper():
+            with open("hwc.csv", "wb") as fh:
+                fh.write(resp.content)
+            return True
+    except requests.RequestException:
+        pass
+    return False
+
+
+def ensure_hwc() -> str:
+    """Keep hwc.csv fresh (<= HWC_MAX_AGE_DAYS old); fall back gracefully.
+
+    Returns a cache key derived from the file that will be used, or ''
+    if no HWC data is available at all.
+    """
+    today = datetime.date.today()
+    if os.path.exists("hwc.csv"):
+        age_days = (today - datetime.date.fromtimestamp(os.path.getmtime("hwc.csv"))).days
+        if age_days > HWC_MAX_AGE_DAYS:
+            with st.spinner("Refreshing the Habitable Worlds Catalog from PHL…"):
+                download_hwc()  # on failure, the existing copy stays in place
+    else:
+        with st.spinner("Downloading the Habitable Worlds Catalog from PHL…"):
+            download_hwc()
+
+    for path in HWC_FILES:
+        if os.path.exists(path):
+            return f"{path}:{os.path.getmtime(path)}"
+    return ""
 
 
 @st.cache_data(show_spinner=False)
 def load_hwc(cache_key: str):
-    """Load the PHL Habitable Worlds Catalog CSV bundled in the repo.
+    """Load the PHL Habitable Worlds Catalog CSV.
 
     Column names have varied across HWC releases (p_name vs P_NAME etc.),
     so downstream code resolves columns case-insensitively.
@@ -428,13 +469,13 @@ def hwc_num(row, colname, decimals: int = 2) -> str:
 PC_TO_LY = 3.26156
 
 
-tab4, tab1, tab2, tab3, tab5 = st.tabs(
+tab4, tab1, tab2, tab5, tab3 = st.tabs(
     [
         "🛰️ Detection methods",
         "📊 Population statistics",
         "🔎 Planet explorer",
-        "🌌 Mass vs orbit",
         "🌿 Habitable exoplanets explorer",
+        "🌌 Mass vs orbit",
     ]
 )
 
@@ -847,12 +888,7 @@ with tab4:
 # Tab 5 — Habitable exoplanets explorer (PHL Habitable Worlds Catalog)
 # ---------------------------------------------------------------------------
 with tab5:
-    hwc_key = ""
-    for _p in HWC_FILES:
-        if os.path.exists(_p):
-            hwc_key = f"{_p}:{os.path.getmtime(_p)}"
-            break
-    hwc_df = load_hwc(hwc_key)
+    hwc_df = load_hwc(ensure_hwc())
 
     if hwc_df is None:
         st.markdown(
@@ -862,14 +898,13 @@ with tab5:
             "(PHL @ UPR Arecibo)</div>",
             unsafe_allow_html=True,
         )
-        st.info(
-            "**The HWC data file isn't bundled with this app yet.** To enable this tab:\n\n"
-            "1. Download the *Full Catalog — all exoplanets (CSV)* from the "
-            "[PHL Habitable Worlds Catalog data page](https://phl.upr.edu/hwc/data).\n"
-            "2. Rename the file to `hwc.csv`.\n"
-            "3. Commit it to the root of this repository and redeploy.\n\n"
-            "The catalog flags potentially habitable planets with `p_habitable > 0` "
-            "(1 = conservative sample, 2 = optimistic sample)."
+        st.warning(
+            "**Couldn't download the Habitable Worlds Catalog right now.** The app "
+            "normally fetches it automatically from PHL and refreshes it weekly, so "
+            "this is likely a temporary network issue — try again shortly. As a "
+            "manual fallback, you can download the *Full Catalog — all exoplanets "
+            "(CSV)* from the [PHL data page](https://phl.upr.edu/hwc/data), rename "
+            "it `hwc.csv`, and commit it to the repository root."
         )
     else:
         # --- Resolve columns across HWC naming variants -------------------
